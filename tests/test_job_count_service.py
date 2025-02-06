@@ -1,0 +1,1 @@
+"import unittest\n\nclass TestJobCountService(unittest.TestCase):\n    def test_process_job_count(self):\n        self.assertEqual(10 + 15, 25)  # Placeholder test\n\nif __name__ == '__main__':\n    unittest.main()" 
