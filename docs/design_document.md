@@ -20,7 +20,35 @@ This document outlines the design for the Job Tracking System, which collects an
 - The system **stores the valid total job count** in a **persistent SQL database**.
 - No partial or incomplete job counts are ever stored.
 
-## 5. Testing Strategy
+## 5. System Architecture (Object Design)
+The system follows **object-oriented design best practices**, ensuring modularity, extensibility, and testability.
+
+### **5.1 Key Design Principles**
+- **Single Responsibility Principle (SRP)**: Each class has **only one reason to change**.
+- **Dependency Injection**: Objects **receive dependencies instead of creating them**.
+- **Separation of Concerns**: Processing logic is separate from database interactions.
+- **Composition Over Inheritance**: Objects **collaborate via composition rather than deep inheritance**.
+- **Open-Closed Principle**: The system **can be extended without modifying existing classes**.
+
+### **5.2 Class Overview**
+| **Class Name**        | **Responsibility** |
+|----------------------|-------------------|
+| `JobDataFetcher`      | Abstract class that defines the method `fetch_job_count(env)`. |
+| `DatabaseJobFetcher`  | Retrieves job counts from a database (subclass of `JobDataFetcher`). |
+| `JobCountService`     | Handles the **aggregation logic** and applies business rules (e.g., missing counts, max limits). |
+| `JobRepository`       | Saves valid job counts to the database. |
+| `JobTrackingApp`      | Orchestrates the overall workflow, calling services and repositories. |
+
+### **5.3 Class Interactions**
+1. `JobTrackingApp` **calls** `JobCountService`.
+2. `JobCountService` **fetches data** from `JobDataFetcher`.
+3. `JobDataFetcher` **retrieves job counts** (via database, API, or files).
+4. `JobCountService` **validates job counts** (checking missing data and max limits).
+5. If validation **passes**, `JobCountService` **stores data** using `JobRepository`.
+
+---
+
+## 6. Testing Strategy
 - **Mocking:** The system was tested using a **mocked `JobDataFetcher`** to verify:
   - **Fetching job counts correctly** from SPA and UPCTM.
   - **Handling missing job counts by raising `ValueError`**.
@@ -28,19 +56,73 @@ This document outlines the design for the Job Tracking System, which collects an
 - **Validation of Database Logic:**
   - Ensure only **valid, complete job counts** are stored in the database.
 
-## 6. Database Design
+## 7. Database Design
 - The system uses a **lightweight SQL database** to store daily job execution counts.
 - The database schema ensures **only valid job counts** are saved (no partial data).
 - Future expansion includes **per-application job tracking** and **job failure tracking**.
 
-## 7. Deployment and Scaling
+## 8. Deployment and Scaling
 - The system is **developed on Windows** and **deployed on Linux**.
 - The database resides **outside the installation folder** for persistence across deployments.
 
-## 8. Future Enhancements
+## 9. Future Enhancements
 - Support for **multiple runs per day** to track trends.
 - Integration with **Grafana for real-time monitoring**.
 - Tracking of **failed jobs** and **ordered-but-not-running jobs** to optimize BMC licensing costs.
 
 ---
+
+## **Appendix: System Architecture Best Practices**
+Below are the **key principles** that must be followed when designing system architecture.
+
+### **A.1 Single Responsibility Principle (SRP)**
+✅ **What is it?**  
+Each class **should have only one responsibility** and **one reason to change**.  
+✅ **Why is it important?**  
+- If a class **does too many things**, modifying one feature **can break another**.  
+- **Smaller, focused classes** are easier to **debug, extend, and test**.  
+
+### **A.2 Dependency Injection (DI)**
+✅ **What is it?**  
+Instead of a class **creating objects inside itself**, we **pass objects to it**.  
+✅ **Why is it important?**  
+- **Increases flexibility** (you can swap dependencies easily).  
+- **Enables testing** (you can mock dependencies).  
+
+### **A.3 Separation of Concerns (SoC)**
+✅ **What is it?**  
+Different parts of the system **should not mix responsibilities** (business logic, data storage, UI, etc.).  
+✅ **Why is it important?**  
+- **Keeps code maintainable** (changing one layer does not affect others).  
+- **Prevents bugs** from spreading across unrelated parts of the system.  
+
+### **A.4 Composition Over Inheritance**
+✅ **What is it?**  
+Prefer **using objects together (composition)** instead of **making everything a subclass (inheritance).**  
+✅ **Why is it important?**  
+- **Avoids deep inheritance chains** (which become hard to debug).  
+- **Allows flexible object combinations** without changing base classes.  
+
+### **A.5 Open-Closed Principle (OCP)**
+✅ **What is it?**  
+A system should be **open for extension but closed for modification**.  
+✅ **Why is it important?**  
+- **New features can be added without modifying existing code** (less risk of breaking existing functionality).  
+
+### **A.6 Testability**
+✅ **What is it?**  
+The system should be **easily testable using unit tests and mocks**.  
+✅ **Why is it important?**  
+- **Prevents regressions** (bugs when changing code).  
+- **Ensures business rules work correctly**.  
+
+### **A.7 Scalability and Maintainability**
+✅ **What is it?**  
+The system should be **designed to grow over time** and be easy to maintain.  
+✅ **Why is it important?**  
+- **Prevents bottlenecks** when adding new features.  
+- **Ensures long-term usability**.  
+
+---
 This document evolves as we refine the design through **Test-Driven Development (TDD)**.
+
