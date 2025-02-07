@@ -1,69 +1,47 @@
-"# Job Tracking System - Design Document" 
 # Job Tracking System - Design Document
 
-## 1. Project Overview
-- **Project Name:** Job Tracking System
-- **Primary Goal:**
-  - Track job execution counts across different production environments.
-  - Provide visibility into job execution trends.
-  - Detect missing or failed jobs to assist with troubleshooting.
-  
-## 2. Core Functionality
-### **Phase 1 - Minimal Viable Product (MVP)**
-- **Data Collection:**
-  - Retrieve job execution counts from multiple sources.
-  - Store job counts in a structured format.
-  
-- **Data Processing:**
-  - Aggregate job counts from different environments.
-  - Calculate total counts for reporting.
+## 1. Overview
+This document outlines the design for the Job Tracking System, which collects and processes job execution counts from SPA and UPCTM environments.
 
-- **Data Storage:**
-  - Persist daily job counts for future analysis.
-  
-### **Phase 2 - Enhancements**
-- **Monitoring & Alerting:**
-  - Detect discrepancies in job counts (e.g., missing jobs, unexpected failures).
-  - Provide real-time job execution metrics.
-  
-- **Historical Analysis:**
-  - Track execution patterns over time.
-  - Identify anomalies and trends.
+## 2. Expected System Behavior
+- The system must fetch job execution counts separately from SPA and UPCTM.
+- The system should ensure that both counts are available before aggregation.
+- The system should handle missing job counts by either:
+  - Raising an explicit error if job count data is unavailable.
+  - Logging the issue while allowing partial processing.
+- The system must enforce a job execution limit based on BMC licensing constraints.
+- If the total job count exceeds **48,500**, an error should be logged, and processing should stop.
 
-## 3. Data & Storage Considerations
-- **What data will be stored?**
-  - Job execution counts by date and environment.
-  - Job details such as status, name, and execution time (future expansion).
+## 3. Data Collection
+- Job execution counts must be retrieved separately from SPA and UPCTM.
+- The system should verify that job counts are successfully fetched from both environments before aggregation.
+- If one count is missing, an error should be raised or logged based on configuration.
 
-- **How will data be accessed?**
-  - Retrieve specific job execution counts by date.
-  - Fetch aggregated totals for trend analysis.
-
-## 4. Expected System Behavior
-- **Data Collection should be reliable and efficient.**
-- **Processing should handle missing data gracefully.**
-- **Storage should allow efficient querying of historical records.**
-- **The system should be extensible to support additional features in the future.**
+## 4. Aggregation Logic
+- Once job counts are retrieved, they should be summed to compute the total daily job execution count.
+- If the total job count exceeds **48,500**, processing should be stopped, and an alert should be generated.
+- The system should store the final job count in a persistent database.
 
 ## 5. Testing Strategy
-- **First Test:** Verify job execution counts can be retrieved and processed correctly.
-- **Next Tests:**
-  - Ensure data is stored and retrieved accurately.
-  - Handle missing or incorrect data gracefully.
-  - Validate that calculations for aggregated totals are correct.
+- Verify that missing job counts trigger the correct error handling mechanism.
+- Test that job count processing prevents exceeding the **48,500** BMC license limit.
+- Ensure job counts are realistically capped to fit within constraints.
+- Test that job counts can be independently fetched from SPA and UPCTM.
+- Validate that both sources contribute to the final total.
 
-## 6. Deployment Considerations
-- **Development Environment:** Windows (for initial development and testing).
-- **Production Environment:** Linux (`ldctlm01` for deployment and execution).
-- **Deployment Strategy:**
-  - Application should be packaged and deployed efficiently.
-  - Database should persist across deployments.
-- **Monitoring:** The system should allow future integration with visualization tools.
+## 6. Database Design
+- The system should use a lightweight SQL database to store job execution counts.
+- The database schema should allow future expansion to include per-application job counts and failure tracking.
+
+## 7. Deployment and Scaling
+- The system should be deployable on both **Windows (development)** and **Linux (production)**.
+- The database should reside **outside the installation folder** to persist across deployments.
+
+## 8. Future Enhancements
+- Support for multiple runs per day with trend analysis.
+- Integration with Grafana for real-time monitoring.
+- Tracking of job failures and ordered-but-not-running jobs to optimize licensing costs.
 
 ---
-
-### **Next Steps**
-- Write an initial test for data collection and job count processing.
-- Implement a minimal stub that allows tests to pass.
-- Expand functionality based on evolving test cases.
+This document will continue evolving as we refine the design through Test-Driven Development (TDD).
 
