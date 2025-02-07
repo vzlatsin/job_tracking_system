@@ -1,22 +1,23 @@
+from services.job_data_fetcher import JobDataFetcher  # ✅ Import the base class
+
 class JobCountService:
-    """ Handles job count processing (Stub Version) """
+    def __init__(self, data_fetcher: JobDataFetcher):
+        """Inject a JobDataFetcher subclass (Database, API, File)."""
+        self.data_fetcher = data_fetcher
 
-    def fetch_job_count(self, env):
-        """ Simulate fetching job count for a given environment """
-        return 1000 if env == "SPA" else 42000  # Simulated values
+    def process_job_count(self, env1, env2):
+        """Fetch job counts from the injected fetcher and sum them."""
+        count1 = self.data_fetcher.fetch_job_count(env1)
+        count2 = self.data_fetcher.fetch_job_count(env2)
 
-    def process_job_count(self, spa_count, upctm_count):
-        """ Validate and compute total job count """
+        if count1 is None or count2 is None:
+            # print(f"DEBUG: Missing job count detected (count1={count1}, count2={count2})")  # Debugging
+            raise ValueError("Job count missing!")
         
-        # ✅ Handle missing values (None)
-        if spa_count is None or upctm_count is None:
-            raise ValueError("[ERROR] Missing job count from one of the environments!")
+        # print(f"DEBUG: count1={count1}, count2={count2}, total={count1 + count2}")  # Debugging
 
-        total_jobs = spa_count + upctm_count
+        if count1 + count2 > 48500:
+            raise RuntimeError("Job count exceeds BMC license limit!")
 
-        # ✅ Enforce BMC License Limit
-        bmc_license_limit = 48000
-        if total_jobs > bmc_license_limit:
-            raise ValueError(f"[ERROR] Job count {total_jobs} exceeds BMC license limit ({bmc_license_limit})!")
 
-        return total_jobs
+        return count1 + count2
