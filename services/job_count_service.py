@@ -1,23 +1,33 @@
-from services.job_data_fetcher import JobDataFetcher  # ✅ Import the base class
+from services.job_data_fetcher import JobDataFetcher  # ✅ Fetches job counts
+from services.job_count_validator import JobCountValidator  # ✅ Handles validation
+from services.job_repository import JobRepository  # ✅ Stores job counts
 
 class JobCountService:
-    def __init__(self, data_fetcher: JobDataFetcher):
-        """Inject a JobDataFetcher subclass (Database, API, File)."""
+    def __init__(self, data_fetcher: JobDataFetcher, job_repository: JobRepository, validator: JobCountValidator):
+        """Inject dependencies for fetching, validating, and storing job counts."""
         self.data_fetcher = data_fetcher
+        self.job_repository = job_repository
+        self.validator = validator
+        self.MAX_BMC_LIMIT = 48500  # ✅ Restore BMC license limit
 
     def process_job_count(self, env1, env2):
-        """Fetch job counts from the injected fetcher and sum them."""
+        """Fetch, validate, enforce limits, and store job counts."""
         count1 = self.data_fetcher.fetch_job_count(env1)
         count2 = self.data_fetcher.fetch_job_count(env2)
 
         if count1 is None or count2 is None:
-            # print(f"DEBUG: Missing job count detected (count1={count1}, count2={count2})")  # Debugging
             raise ValueError("Job count missing!")
-        
-        # print(f"DEBUG: count1={count1}, count2={count2}, total={count1 + count2}")  # Debugging
 
-        if count1 + count2 > 48500:
-            raise RuntimeError("Job count exceeds BMC license limit!")
+        # ✅ Validate job counts before proceeding
+        self.validator.validate_counts(count1, count2)
 
+        total_count = count1 + count2
 
-        return count1 + count2
+        # ✅ Enforce BMC license limit before storing
+        if total_count > self.MAX_BMC_LIMIT:
+            raise RuntimeError(f"Job count exceeds BMC license limit! (Total: {total_count})")
+
+        # ✅ Store only valid job counts
+        self.job_repository.save_job_count(total_count)
+
+        return total_count

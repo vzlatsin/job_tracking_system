@@ -48,81 +48,6 @@ The system follows **object-oriented design best practices**, ensuring modularit
 
 ---
 
-## 6. Testing Strategy
-- **Mocking:** The system was tested using a **mocked `JobDataFetcher`** to verify:
-  - **Fetching job counts correctly** from SPA and UPCTM.
-  - **Handling missing job counts by raising `ValueError`**.
-  - **Stopping processing if the job count exceeds 48,500** (`RuntimeError`).
-- **Validation of Database Logic:**
-  - Ensure only **valid, complete job counts** are stored in the database.
-
-## 7. Database Design
-- The system uses a **lightweight SQL database** to store daily job execution counts.
-- The database schema ensures **only valid job counts** are saved (no partial data).
-- Future expansion includes **per-application job tracking** and **job failure tracking**.
-
-## 8. Deployment and Scaling
-- The system is **developed on Windows** and **deployed on Linux**.
-- The database resides **outside the installation folder** for persistence across deployments.
-
-## 9. Future Enhancements
-- Support for **multiple runs per day** to track trends.
-- Integration with **Grafana for real-time monitoring**.
-- Tracking of **failed jobs** and **ordered-but-not-running jobs** to optimize BMC licensing costs.
-
----
-
-## **Appendix: System Architecture Best Practices**
-Below are the **key principles** that must be followed when designing system architecture.
-
-### **A.1 Single Responsibility Principle (SRP)**
-✅ **What is it?**  
-Each class **should have only one responsibility** and **one reason to change**.  
-✅ **Why is it important?**  
-- If a class **does too many things**, modifying one feature **can break another**.  
-- **Smaller, focused classes** are easier to **debug, extend, and test**.  
-
-### **A.2 Dependency Injection (DI)**
-✅ **What is it?**  
-Instead of a class **creating objects inside itself**, we **pass objects to it**.  
-✅ **Why is it important?**  
-- **Increases flexibility** (you can swap dependencies easily).  
-- **Enables testing** (you can mock dependencies).  
-
-### **A.3 Separation of Concerns (SoC)**
-✅ **What is it?**  
-Different parts of the system **should not mix responsibilities** (business logic, data storage, UI, etc.).  
-✅ **Why is it important?**  
-- **Keeps code maintainable** (changing one layer does not affect others).  
-- **Prevents bugs** from spreading across unrelated parts of the system.  
-
-### **A.4 Composition Over Inheritance**
-✅ **What is it?**  
-Prefer **using objects together (composition)** instead of **making everything a subclass (inheritance).**  
-✅ **Why is it important?**  
-- **Avoids deep inheritance chains** (which become hard to debug).  
-- **Allows flexible object combinations** without changing base classes.  
-
-### **A.5 Open-Closed Principle (OCP)**
-✅ **What is it?**  
-A system should be **open for extension but closed for modification**.  
-✅ **Why is it important?**  
-- **New features can be added without modifying existing code** (less risk of breaking existing functionality).  
-
-### **A.6 Testability**
-✅ **What is it?**  
-The system should be **easily testable using unit tests and mocks**.  
-✅ **Why is it important?**  
-- **Prevents regressions** (bugs when changing code).  
-- **Ensures business rules work correctly**.  
-
-### **A.7 Scalability and Maintainability**
-✅ **What is it?**  
-The system should be **designed to grow over time** and be easy to maintain.  
-✅ **Why is it important?**  
-- **Prevents bottlenecks** when adding new features.  
-- **Ensures long-term usability**.  
-
 ## **Appendix B: How TDD Shaped Our System Design**
 
 ### **B.1 Overview**
@@ -131,15 +56,22 @@ Test-Driven Development (TDD) has been instrumental in shaping the architecture 
 - The design evolved **incrementally**, avoiding overengineering.
 - Dependencies were **mocked and injected**, reducing coupling and improving modularity.
 
-### **B.2 How Tests Drove the Design**
+### **B.2 Catching Errors Early During the Design Phase**
+During the design phase, the system's **metadata (class dependencies, method signatures, and parameters) is highly volatile**. TDD helps by:
+- **Failing early when an object is missing**, ensuring dependencies are properly structured before implementation.
+- **Providing immediate feedback when constructor signatures change**, preventing breaking changes from propagating unnoticed.
+- **Allowing for incremental improvements**, guiding design choices naturally without overengineering.
+
+### **B.3 How Tests Drove the Design**
 Initially, we wrote tests for fundamental system requirements:
 - **Fetching job counts correctly** (`test_fetch_and_process_job_counts`)
 - **Handling missing job counts properly** (`test_missing_job_count_raises_error`)
 - **Ensuring job count limits are enforced** (`test_exceeding_bmc_license_limit`)
+- **Ensuring dependency injection is correctly structured**
 
 These tests **forced us to introduce `JobCountService`** as a separate abstraction to handle business logic while keeping data fetching independent. **Without TDD, we might have prematurely coupled these concerns.**
 
-### **B.3 How TDD Prevented Bad Design**
+### **B.4 How TDD Prevented Bad Design**
 1. **Encapsulation of Business Logic**
    - Our first test failed when a job count was missing.
    - Instead of handling this inside the database layer, TDD guided us to **centralize validation inside `JobCountService`**.
@@ -148,28 +80,24 @@ These tests **forced us to introduce `JobCountService`** as a separate abstracti
    - Early test failures revealed that we needed clear separation between **data fetching, processing, and storage**.
    - This resulted in **better modularity**, making the system easier to maintain.
 
-3. **Improved Dependency Injection**
-   - Writing tests required us to **mock `JobDataFetcher`** to isolate `JobCountService` logic.
-   - This led to a **better architecture where `JobCountService` receives dependencies instead of creating them**.
+3. **Immediate Detection of Architectural Inconsistencies**
+   - When new dependencies were introduced, **tests broke immediately**, alerting us to missing parameters in constructor signatures.
+   - This helped ensure that **each change was intentional and well-integrated** into the design.
 
-### **B.4 Evolution of System Architecture Through TDD**
+### **B.5 Evolution of System Architecture Through TDD**
 Each test failure guided refinements in system design:
 | **Test Case** | **Impact on System Design** |
 |--------------|--------------------------|
 | Missing job count raises `ValueError` | Led to explicit validation in `JobCountService` |
 | Exceeding BMC license limit stops processing | Led to early failure conditions for excessive counts |
-| Database persistence test | Led to the creation of `JobRepository` for storing only valid data |
+| Dependency injection failures | Forced validation of constructor parameters in tests |
+| Ensuring metadata stability | Led to the introduction of early validation checks for missing classes |
 
-### **B.5 Next Steps in TDD**
+### **B.6 Next Steps in TDD**
 As we expand the system, TDD will drive:
 - **Database persistence validation** (ensuring only valid counts are stored).
 - **Retries and error handling** (ensuring the system remains robust under failures).
 - **Refactoring opportunities** (keeping the design clean and modular).
 
-By continuing this approach, we ensure that **our system evolves in a testable, maintainable, and elegant way.**
-
-
-
----
-This document evolves as we refine the design through **Test-Driven Development (TDD)**.
+By continuing this approach, we ensure that **our system evolves in a testable, maintainable, and elegant way while catching errors as early as possible in the design phase.**
 
