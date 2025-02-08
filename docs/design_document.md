@@ -123,6 +123,53 @@ The system should be **designed to grow over time** and be easy to maintain.
 - **Prevents bottlenecks** when adding new features.  
 - **Ensures long-term usability**.  
 
+## **Appendix B: How TDD Shaped Our System Design**
+
+### **B.1 Overview**
+Test-Driven Development (TDD) has been instrumental in shaping the architecture of the Job Tracking System. By writing tests before implementing functionality, we ensured that:
+- Each component has a **clear and testable responsibility**.
+- The design evolved **incrementally**, avoiding overengineering.
+- Dependencies were **mocked and injected**, reducing coupling and improving modularity.
+
+### **B.2 How Tests Drove the Design**
+Initially, we wrote tests for fundamental system requirements:
+- **Fetching job counts correctly** (`test_fetch_and_process_job_counts`)
+- **Handling missing job counts properly** (`test_missing_job_count_raises_error`)
+- **Ensuring job count limits are enforced** (`test_exceeding_bmc_license_limit`)
+
+These tests **forced us to introduce `JobCountService`** as a separate abstraction to handle business logic while keeping data fetching independent. **Without TDD, we might have prematurely coupled these concerns.**
+
+### **B.3 How TDD Prevented Bad Design**
+1. **Encapsulation of Business Logic**
+   - Our first test failed when a job count was missing.
+   - Instead of handling this inside the database layer, TDD guided us to **centralize validation inside `JobCountService`**.
+
+2. **Separation of Concerns**
+   - Early test failures revealed that we needed clear separation between **data fetching, processing, and storage**.
+   - This resulted in **better modularity**, making the system easier to maintain.
+
+3. **Improved Dependency Injection**
+   - Writing tests required us to **mock `JobDataFetcher`** to isolate `JobCountService` logic.
+   - This led to a **better architecture where `JobCountService` receives dependencies instead of creating them**.
+
+### **B.4 Evolution of System Architecture Through TDD**
+Each test failure guided refinements in system design:
+| **Test Case** | **Impact on System Design** |
+|--------------|--------------------------|
+| Missing job count raises `ValueError` | Led to explicit validation in `JobCountService` |
+| Exceeding BMC license limit stops processing | Led to early failure conditions for excessive counts |
+| Database persistence test | Led to the creation of `JobRepository` for storing only valid data |
+
+### **B.5 Next Steps in TDD**
+As we expand the system, TDD will drive:
+- **Database persistence validation** (ensuring only valid counts are stored).
+- **Retries and error handling** (ensuring the system remains robust under failures).
+- **Refactoring opportunities** (keeping the design clean and modular).
+
+By continuing this approach, we ensure that **our system evolves in a testable, maintainable, and elegant way.**
+
+
+
 ---
 This document evolves as we refine the design through **Test-Driven Development (TDD)**.
 
