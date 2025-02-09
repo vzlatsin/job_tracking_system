@@ -10,18 +10,19 @@ class JobCountService:
         self.job_repository = job_repository
         self.validator = validator
         self.logger = logger  # ✅ Assign logger instance
+        self.class_name = self.__class__.__name__  # ✅ Dynamically store the class name
 
         self.MAX_BMC_LIMIT = 48500  # ✅ Restore BMC license limit
 
     def process_job_count(self, env1, env2):
         """Fetch, validate, enforce limits, and store job counts."""
-        self.logger.log_info(f"Fetching job counts from {env1} and {env2}")  # ✅ Log start
+        self.logger.log_info(f"[{self.class_name}]Fetching job counts from {env1} and {env2}")  # ✅ Log start
 
         count1 = self.data_fetcher.fetch_job_count(env1)
         count2 = self.data_fetcher.fetch_job_count(env2)
 
         if count1 is None or count2 is None:
-            self.logger.log_error("Job count missing!")  # ✅ Ensure logging happens
+            self.logger.log_error(f"[{self.class_name}]Job count missing!")  # ✅ Ensure logging happens
             raise ValueError("Job count missing!")
 
         # ✅ Validate job counts before proceeding
@@ -29,11 +30,11 @@ class JobCountService:
 
         total_count = count1 + count2
         # ✅ Ensure success log is called before storing the job count
-        self.logger.log_info(f"Job count validated successfully. Storing count: {total_count}") 
+        self.logger.log_info(f"[{self.class_name}]Job count validated successfully. Storing count: {total_count}") 
 
         # ✅ Enforce BMC license limit before storing
         if total_count > self.MAX_BMC_LIMIT:
-            self.logger.log_error(f"Job count exceeds BMC license limit! (Total: {total_count})")  # ✅ Ensure logging before raising error
+            self.logger.log_error(f"[{self.class_name}]Job count exceeds BMC license limit! (Total: {total_count})")  # ✅ Ensure logging before raising error
             raise RuntimeError(f"Job count exceeds BMC license limit! (Total: {total_count})")
 
         # ✅ Store only valid job counts
